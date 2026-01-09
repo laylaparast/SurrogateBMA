@@ -1,0 +1,83 @@
+---
+title: "Tutorial for main functions in SurrogateBMA package"
+output:
+  html_document:
+    self_contained: true
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.width=7, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+```
+
+If you are viewing the html version of this tutorial, you can find the R markdown file here: <https://github.com/laylaparast/SurrogateBMA>. It is the file called SurrogateBMA_tutorial.Rmd. In this tutorial, we will go through an example using the main functions in the **SurrogateBMA** package. First, install the package from CRAN and load it. 
+
+```{r results = "hide", message=FALSE}
+#install.packages("SurrogateBMA")
+library(SurrogateBMA)
+```
+
+This package provides a method to estimate the proportion of treatment effect explained by a surrogate marker using a Bayesian Model Averaging (BMA) approach as outlined in: Duan Y and Parast L "Flexible evaluation of surrogate markers with Bayesian model averaging", Statistics in Medicine, <https://doi.org/10.1002/sim.9986>. This procedure offers a compromise between a fully model-based approach and fully nonparametric approach by introducing model flexibility via averaging over several candidate models and maintains the strength of parametric models with respect to inference.
+
+The main function is `R.BMA.est` which calculates the proportion of treatment effect explained by the surrogate. At a minimum, this function expects the following: (1) `Y`, the primary outcome, (2) `S`, the surrogate marker, (3) `A`, the treatment indicator coded as 1 for treatment and 0 for control.
+
+Let's use the example data provided in the package, `exampleData`. This dataset contains 400 observations with the primary outcome, surrogate, and treatment indicator.  
+
+```{r}
+data(exampleData)
+names(exampleData)
+head(exampleData)
+```
+
+Now let's use the main function to estimate the proportion of the treatment effect on Y that is explained by the treatment effect on S
+
+```{r}
+R.BMA.est(Y = exampleData$Y, S = exampleData$S, A = exampleData$A)
+```
+
+First, `$R.est` is the estimated proportion of treatment effect explained (PTE) and `$ci` is the estimated 95% confidence interval for this quantity, obtained by Bayesian bootstrapping. 
+
+The PTE is estimated by considering  five possible parametric models for  \( p(Y \mid A, S) \) such that
+\[
+Y = g_i\!\left(\beta_0 + \beta_1 A + \beta_2 S + \beta_3 A S + \varepsilon\right),
+\quad \varepsilon \sim Normal(0, \sigma^2),
+\tag{7}
+\]
+where \( i = 1, \ldots, 5 \), and the link functions \( g_i \) are defined as follows:
+
+- **Model 1:**
+\[
+g_1(x) = \exp(x) - 1
+\]
+
+- **Model 2:**
+\[
+g_2(x) = x^2
+\]
+
+- **Model 3:**
+\[
+g_3(x) = x
+\]
+
+- **Model 4:**
+\[
+g_4(x) = \sqrt{x}
+\]
+
+- **Model 5:**
+\[
+g_5(x) = \log(x + 1)
+\]
+
+The `$p.model` estimates are the posterior probabilities of each of the candidate models above being true. One can alternatively use the argument `method = "robust"` which instead uses an approach that is between the BMA and non-parametric methods based on cross-validation. 
+
+```{r}
+R.BMA.est(Y = exampleData$Y, S = exampleData$S, A = exampleData$A, method = "robust")
+```
+
+Other options include the ability to change the number of MCMC samples in posterior inference (`nmc`), the number of replicates in Bayesian bootstrap (`nBB`), the hyper-parameters in the inverse-Gamma-Normal prior for the variance and coefficients (`prior.para`), and the value of k in k-fold cross validation when `method="robust"` (`kfold-k`).
+
+
+That's all for now!
+
+---------
